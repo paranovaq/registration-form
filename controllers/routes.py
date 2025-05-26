@@ -1,6 +1,8 @@
+from models.user import Base
+from engine.session import engine
 from fastapi import APIRouter
 from sqlalchemy import select
-from services.user_service import check_user
+'''from services.user_service import check_user'''
 from engine.session import SessionDep
 from models.user import(
     UserModelEmail,
@@ -15,9 +17,15 @@ from models.user import(
 router = APIRouter()
 
 
+@router.post("/setup")
+async def setup_database():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+        return {"ok": True}
 @router.post("/email", response_model=UserSchemaEmail)
 async def add_user_email(user: UserSchemaEmail, session: SessionDep):
-    await check_user(session, UserModelEmail, "email", user.email)
+    '''await check_user(session, UserModelEmail, "email", user.email)'''
     new_user = UserModelEmail(
         full_name=user.full_name,
         email=user.email,
@@ -30,7 +38,7 @@ async def add_user_email(user: UserSchemaEmail, session: SessionDep):
 
 @router.post("/telegram", response_model=UserSchemaTelegram)
 async def add_user_telegram(user: UserSchemaTelegram, session: SessionDep):
-    await check_user(session, UserModelTelegram, "telegram", user.telegram)
+    '''await check_user(session, UserModelTelegram, "telegram", user.telegram)'''
     new_user = UserModelTelegram(
         full_name=user.full_name,
         telegram=user.telegram,
@@ -67,7 +75,7 @@ async def get_users_telegram(session: SessionDep):
     ) for user in users_telegram]
 
 
-@router.get("users", response_model=list[UserGetSchemaAll])
+@router.get("/users", response_model=list[UserGetSchemaAll])
 async def get_all_users(session: SessionDep):
     email_users = await get_users_email(session)
     telegram_users = await get_users_telegram(session)
