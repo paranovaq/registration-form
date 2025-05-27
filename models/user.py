@@ -1,6 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from typing import Optional
+
+
 
 
 class Base(DeclarativeBase):
@@ -21,13 +23,13 @@ class UserModelTelegram(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     full_name: Mapped[str]
-    telegram: Mapped[str] = mapped_column(unique=True)
+    telegram: Mapped[str] = mapped_column(nullable=False, unique=True)
     password: Mapped[str]
 
 
 class UserSchemaEmail(BaseModel):
     full_name: str
-    email: str
+    email: EmailStr
     password: str
 
 

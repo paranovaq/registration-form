@@ -1,10 +1,11 @@
-from models.user import Base
-from engine.session import engine
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
-'''from services.user_service import check_user'''
-from engine.session import SessionDep
+from services import user_service
+from psycopg2 import IntegrityError
+from engine.session import SessionDep, engine
+from passlib.context import CryptContext
 from models.user import(
+    Base,
     UserModelEmail,
     UserModelTelegram,
     UserSchemaEmail,
@@ -14,8 +15,10 @@ from models.user import(
     UserGetSchemaAll
 )
 
+
 router = APIRouter()
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.post("/setup")
 async def setup_database():
@@ -23,30 +26,47 @@ async def setup_database():
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
         return {"ok": True}
+
+
 @router.post("/email", response_model=UserSchemaEmail)
 async def add_user_email(user: UserSchemaEmail, session: SessionDep):
-    '''await check_user(session, UserModelEmail, "email", user.email)'''
     new_user = UserModelEmail(
-        full_name=user.full_name,
-        email=user.email,
-        password=user.password,
+        full_name = user.full_name,
+        email = user.email,
+        password = pwd_context.hash(user.password)
     )
     session.add(new_user)
     await session.commit()
     return user
+'''try:
+        await session.commit()
+    except IntegrityError:
+            await session.rollback()
+            raise HTTPException(
+                    status_code=400,
+                    detail="Email already registered")
+    return user'''
+
 
 
 @router.post("/telegram", response_model=UserSchemaTelegram)
 async def add_user_telegram(user: UserSchemaTelegram, session: SessionDep):
-    '''await check_user(session, UserModelTelegram, "telegram", user.telegram)'''
     new_user = UserModelTelegram(
         full_name=user.full_name,
         telegram=user.telegram,
-        password=user.password,
+        password=pwd_context.hash(user.password),
     )
     session.add(new_user)
     await session.commit()
     return user
+'''try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise HTTPException(
+                status_code=400,
+                detail="Email already registered")
+    return user'''
 
 
 @router.get("/email", response_model=list[UserGetSchemaEmail])
@@ -79,21 +99,4 @@ async def get_users_telegram(session: SessionDep):
 async def get_all_users(session: SessionDep):
     email_users = await get_users_email(session)
     telegram_users = await get_users_telegram(session)
-    all_users = []
-
-    for user in email_users:
-        all_users.append(UserGetSchemaAll(
-            id=user.id,
-            full_name=user.full_name,
-            email=user.email,
-            password=user.password
-        ))
-    for user in telegram_users:
-        all_users.append(UserGetSchemaAll(
-            id=user.id,
-            full_name=user.full_name,
-            telegram=user.telegram,
-            password=user.password
-        ))
-
-    return all_users
+    return user_service.get_all_users(email_users, telegram_users)
