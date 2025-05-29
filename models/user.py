@@ -1,6 +1,4 @@
-from idlelib.query import Query
-
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from typing import Optional, Annotated
 

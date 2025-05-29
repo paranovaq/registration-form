@@ -1,9 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from sqlalchemy import select
 from services import user_service
-from psycopg2 import IntegrityError
 from engine.session import SessionDep, engine
-from passlib.context import CryptContext
 from models.user import(
     Base,
     UserModelEmail,
@@ -18,8 +16,6 @@ from models.user import(
 
 router = APIRouter()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 @router.post("/setup")
 async def setup_database():
     async with engine.begin() as conn:
@@ -30,43 +26,15 @@ async def setup_database():
 
 @router.post("/email", response_model=UserSchemaEmail)
 async def add_user_email(user: UserSchemaEmail, session: SessionDep):
-    new_user = UserModelEmail(
-        full_name = user.full_name,
-        email = user.email,
-        password = pwd_context.hash(user.password)
-    )
-    session.add(new_user)
-    await session.commit()
-    return user
-'''try:
-        await session.commit()
-    except IntegrityError:
-            await session.rollback()
-            raise HTTPException(
-                    status_code=400,
-                    detail="Email already registered")
-    return user'''
+    return await user_service.add_user_email(user, session)
+
 
 
 
 @router.post("/telegram", response_model=UserSchemaTelegram)
 async def add_user_telegram(user: UserSchemaTelegram, session: SessionDep):
-    new_user = UserModelTelegram(
-        full_name=user.full_name,
-        telegram=user.telegram,
-        password=pwd_context.hash(user.password),
-    )
-    session.add(new_user)
-    await session.commit()
-    return user
-'''try:
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(
-                status_code=400,
-                detail="Email already registered")
-    return user'''
+    return await user_service.add_user_telegram(user, session)
+
 
 
 @router.get("/email", response_model=list[UserGetSchemaEmail])
@@ -99,4 +67,4 @@ async def get_users_telegram(session: SessionDep):
 async def get_all_users(session: SessionDep):
     email_users = await get_users_email(session)
     telegram_users = await get_users_telegram(session)
-    return user_service.get_all_users(email_users, telegram_users)
+    return await user_service.get_all_users(email_users, telegram_users)
