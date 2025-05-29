@@ -78,7 +78,7 @@ async def get_users_email(session: SessionDep):
         id=user.id,
         full_name=user.full_name,
         email=user.email,
-        password=user.password
+        hashed_password=user.password
     ) for user in users_email]
 
 
@@ -91,7 +91,7 @@ async def get_users_telegram(session: SessionDep):
         id=user.id,
         full_name=user.full_name,
         telegram=user.telegram,
-        password=user.password
+        hashed_password=user.password
     ) for user in users_telegram]
 
 
