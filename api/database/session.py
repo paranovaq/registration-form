@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from settings.config import settings
+from api.database.config import settings
 from fastapi import Depends
 from typing import Annotated
 
